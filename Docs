@@ -1,0 +1,33 @@
+Installation:
+1. To install variant_tools need to install libbz2-dev and zlib1g-dev. DO NOT install variant_tools using pip because that is an old version, go to the github page and install by downloading the code 
+   package and run python setup.py install. swig need to be installed before install variant_tools. 
+2. To install gtc, first download the htslib, because downloading it in terminal is extremely slow and may lead to installation failure. Also, cmake should be installed. 
+3. To install VCFtools, first need to install autoconf. To install bcftools, install from git. Usually, bcftools is faster than vcftools.
+
+
+Operation:
+1. To check how many records in a .vcf.gz file, use 'bcftools index -n  filename.vcf.gz'
+2. To check how many individuals and variant site are there in a .vcf or .vcf.gz file, use 'vcftools --(gz)vcf filename'
+3. In variant simulation tools, each simulation is a model in a pipeline file. The simulations shown by 'vtools show simulations' are on a server, one can download the pipeline files and modify it and  	 run it from local.
+4. To compress a .vcf file to .vcf.gz file, install tabix. And 'bgzip -c file.vcf > file.vcf.gz','tabix -p vcf file.vcf.gz' 
+5. If 'vtools simulate ...' fails, delete all previous simulated files and try again.
+6. To slice a vcf.gz file by samples, install bcftools, than 'bcftools view -S/s indexFilename/sampleNames -o output.vcf.gz -O z inputFile.vcf.gz'
+7. To slice a vcf.gz file by variant sites, 'bcftools view -r 22:16050075-18000000 gene1000chr22.vcf.gz -O z -o gene1000chr22_1605_1800.vcf.gz'
+8. To concatenate .vcf.gz files along variant sites axis, 'bcftools concat gene1000chr22_1605_1800.vcf.gz gene1000chr22_1800_1801.vcf.gz -O z -o gene1000chr22_1605_1801.vcf.gz'
+9. To concatenate .vcf.gz files along sample axis, 'bcftools merge gene1000chr22_1605_1800.vcf.gz gene1000chr22_1605_1800OtherSamples.vcf.gz -O z -o largePopulation.vcf.gz'
+10. To check list of samples, number of samples, list of positions, refer http://samtools.github.io/bcftools/howtos/query.html
+11. To reserve a CPU for testing gtc, refer https://blog.csdn.net/chinagissoft/article/details/50476036
+12. To specify a CPU to execute programs, refer http://xmodulo.com/run-program-process-specific-cpu-cores-linux.html  Combine 11 and 12 to test gtc.
+13. To empty the buffers cache, 'sudo sh -c 'free && sync && echo 3 > /proc/sys/vm/drop_caches && free''
+14. To change samples' names of a .vcf.gz file, use 'bcftools reheader -s newSampleNameFile -o output.vcf.gz input.vcf.gz'
+15. When variant simulation tools doesn't work, try run it with internet connection, because it may rely on some file on the server.
+
+
+Information:
+1. In gene1000chr22 position is from 16050075 to 51244237.
+2. 'vtools simulate my' can work on a range of 2,000,000 bp.  
+3. Base pair(bp) positions in filenames, only show the first 4 digits. For the first and last bp in a .vcf file, it means the exact position number, like 1605 in gene1000chr22 means 16050075, the position 	of the first record in that file. For the middle bps in a .vcf file, when the number shows as a end position, like 1605_1800, then 1800 means 18000000, when it shows as a start position, like 1800_2000, then 1800 means 18000001. 
+4. The Genome 1000 project data can be downloaded from http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/, pay attention to the annotation database used, because the Variant Simulation Tools needs to use corresponding annotation database to simulate.
+
+Something need to be dug in:
+1. GTC decompressed .vcf file has more variant sites than the original one.

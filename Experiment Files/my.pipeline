@@ -1,0 +1,99 @@
+[pipeline description]
+description=A pipleline made by Songchen, whose goal is to mimic the Peng_2014_ex1
+	pipeline but change it so that this pipeline can be used for generating DNA sequence
+	which can be used for exploiting compressing algorithm for huge sample number DNA data.
+
+resample_description=A simulation model that extracts genotypes within the 
+	sepecified regions from the 1000 genomes project, and expands it very
+	rapidly to mimick a resampling-based simulation.
+
+
+[DEFAULT]
+regions=chr22:16050075-16200000
+regions_comment=One or more chromosome regions (separated by ',') in the format of
+  chr:start-end (e.g. chr21:33031597-33041570), or Field:Value from a region-based
+  annotation database (e.g. refGene.name2:TRIM2 or refGene_exon.name:NM_000947).
+  Please visit http://varianttools.sourceforge.net/Simulation for detailed
+  description of this parameter.
+  
+scale=25
+scale_comment=Scaling factor to speed up the simulation by scaling down the
+  simulation while boosting mutation, selection and recombination rates.
+
+extracted_vcf=extracted.vcf
+extracted_vcf_comment=Filename (with dir) to save genotypes (.vcf file extracted by tabix
+  command) for the resample model. This file will be automatically created and 
+  reused if it already exists. You will need to remove this file if you run the 
+  same pipeline using another region.
+
+[*_0]
+action=CheckVariantToolsVersion('2.3.1')
+comment=Check the version of variant tools. Version 2.3.1 or higher is required
+	for the execution of this simulation.
+
+[*_1]
+action=ImportModules('simuPOP.demography')
+comment=Import required modules.
+
+
+[resample_2]
+input_emitter=EmitInput(select=${:not glob.glob('*.proj')})
+action=RunCommand('vtools init resample')
+comment=Create a new project if there is no existing project under the current
+	directory.
+
+[resample_3]
+action=RunCommand('vtools use thousandGenomes-hg19_v5b_20130502.DB')
+comment=Link the refGene database to the project. This database is required
+	to parse the regions for gene structure.
+
+
+[resample_4]
+action=ExtractVCF(
+	sourceURL='gene1000chr22.vcf.gz',
+	regions='%(regions)s',
+	output='%(extracted_vcf)s')
+input_emitter=EmitInput(select=${:not os.path.isfile('%(extracted_vcf)s')})
+output='%(extracted_vcf)s'
+comment=Extract genotypes of specified regions from 1000 genomes project. No
+    dependency check will be performed so the extracted file can be used by
+    other projects if you put is to a place accessible by other projects. Location
+    of the extracted file can be specified by option --extracted_file.
+
+[resample_5]
+action=CreatePopulation(																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																														
+	importGenotypeFrom='%(extracted_vcf)s',
+	regions='%(regions)s',
+	output='cache/my_resample_init_${seed}.pop')
+output='cache/my_resample_init_${seed}.pop'
+comment=Create an empty simuPOP population for specified regions.
+
+[resample_6]
+action=EvolvePopulation(
+	output='my_resample_sampled_${seed}.pop',
+	mutator=RefGenomeMutator(regions='%(regions)s', model='JC69', rate=[1.8e-8 * %(scale)s * 4. / 3.]),
+	selector=ProteinSelector('%(regions)s', s_missense=0.0001 * %(scale)s,
+		s_stoploss=0.0001 * %(scale)s, s_stopgain=0.001 * %(scale)s),
+	transmitter=FineScaleRecombinator(regions='%(regions)s', scale=%(scale)s),
+	demoModel=ExponentialGrowthModel(T=10,
+		NT=50000)
+    )
+
+
+comment=Expand the population exponentially to d a large population
+	in 10 generations. Mutations and recombinations are allowed and
+	a selection model that only select against stopgain mutations are
+	used.
+
+[resample_7]
+action=ExportPopulation(
+	output='newSimulatedPopulation.vcf'	
+	)
+
+
+[resample_999]
+action=RemoveIntermediateFiles(['my_resample_sampled_${seed}.pop'])
+comment=Remove intermediate populations to save diskspace.
+
+
+
